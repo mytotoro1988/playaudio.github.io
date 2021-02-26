@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css"
+        integrity="sha512-HK5fgLBL+xu6dm/Ii3z4xhlSUyZgTT9tuc/hSrtw6uzJOvgRr2a9jyxxT1ely+B+xFAmJKVSTbpM/CuL7qxO8w=="
+        crossorigin="anonymous" />
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ec1f55;
+            --text-color: #333;
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: inherit;
+        }
+
+        body {
+            background-color: #f5f5f5;
+        }
+
+        html {
+            box-sizing: border-box;
+            font-family: "Poppins", sans-serif;
+        }
+
+        .player {
+            position: relative;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .player .icon-pause {
+            display: none;
+        }
+
+        .player.playing .icon-pause {
+            display: inline-block;
+        }
+
+        .player.playing .icon-play {
+            display: none;
+        }
+
+        .dashboard {
+            padding: 16px 16px 14px;
+            background-color: #fff;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            max-width: 480px;
+            border-bottom: 1px solid #ebebeb;
+        }
+
+        /* HEADER */
+        header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        header h4 {
+            color: var(--primary-color);
+            font-size: 12px;
+        }
+
+        header h2 {
+            color: var(--text-color);
+            font-size: 20px;
+        }
+
+        /* CD */
+        .cd {
+            display: flex;
+            margin: auto;
+            width: 200px;
+        }
+
+        .cd-thumb {
+            width: 100%;
+            padding-top: 100%;
+            border-radius: 50%;
+            background-color: #333;
+            background-size: cover;
+            margin: auto;
+        }
+
+        /* CONTROL */
+        .control {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 18px 0 8px 0;
+        }
+
+        .control .btn {
+            color: #666;
+            padding: 18px;
+            font-size: 18px;
+        }
+
+        .control .btn.active {
+            color: var(--primary-color);
+        }
+
+        .control .btn-toggle-play {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            font-size: 24px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-color);
+        }
+
+        .progress {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: 0.2s;
+            transition: opacity 0.2s;
+        }
+
+        .progress::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 6px;
+            background-color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        /* PLAYLIST */
+        .playlist {
+            margin-top: 408px;
+            padding: 12px;
+        }
+
+        .song {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            background-color: #fff;
+            padding: 8px 16px;
+            border-radius: 5px;
+            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .song.active {
+            background-color: var(--primary-color);
+        }
+
+        .song:active {
+            opacity: 0.8;
+        }
+
+        .song.active .option,
+        .song.active .author,
+        .song.active .title {
+            color: #fff;
+        }
+
+        .song .thumb {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-size: cover;
+            margin: 0 8px;
+        }
+
+        .song .body {
+            flex: 1;
+            padding: 0 16px;
+        }
+
+        .song .title {
+            font-size: 18px;
+            color: var(--text-color);
+        }
+
+        .song .author {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .song .option {
+            padding: 16px 8px;
+            color: #999;
+            font-size: 18px;
+        }
+
+        .volume-block {
+            display:flex;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="player">
+        <!-- Dashboard -->
+        <div class="dashboard">
+            <!-- Header -->
+            <header>
+                <h4>Now playing:</h4>
+                <h2 class="song-name"></h2>
+            </header>
+
+            <!-- CD -->
+            <div class="cd">
+                <div class="cd-thumb">
+                </div>
+            </div>
+
+            <!-- Control -->
+            <div class="control">
+                <div class="btn btn-repeat">
+                    <i class="fas fa-redo"></i>
+                </div>
+                <div class="btn btn-prev">
+                    <i class="fas fa-step-backward"></i>
+                </div>
+                <div class="btn btn-toggle-play">
+                    <i class="fas fa-pause icon-pause"></i>
+                    <i class="fas fa-play icon-play"></i>
+                </div>
+                <div class="btn btn-next">
+                    <i class="fas fa-step-forward"></i>
+                </div>
+                <div class="btn btn-random">
+                    <i class="fas fa-random"></i>
+                </div>
+                <div class="btn btn-mute ">
+                  <i class="fas fa-volume-mute"></i>
+                </div>
+                <div class="volume-block">
+                    <input id="volume" type="range" value="0" step="1" min="0" max="100">
+                </div>
+
+            </div>
+
+            <input id="progress" class="progress" type="range" value="0" step="1" min="0" max="100">
+
+            <audio id="audio" src=""></audio>
+        </div>
+
+        <!-- Playlist -->
+        <div class="playlist">
+        </div>
+    </div>
+
+    <script>
+
+// 1.Liệt kê danh sách bài hát
+// 2.chức năng thu nhỏ đĩa
+// 3.load được thông tin của bài hiện tại
+// 4.chức năng pause/play
+//5 chức năng mute
+// 6chức năng xoay đĩa
+// 7Slider tự cập nhật theo tiến độ bài hát
+// 8chức năng next/prev/seek
+// 9chức năng loop
+// 10chức năng random
+// 11chuyển bài tiếp khi hết bài
+// 12chơi bài hát bất kì khi click trong danh sách
+// chức năng thêm bài hát
+// chức năng xóa bài hát
+// 15.  background sóng nhạc
+        const $ = document.querySelector.bind(document)
+        const $$ = document.querySelectorAll.bind(document)
+
+        const player = $('.player')
+        const playlist = $('.playlist')
+        const cd = $('.cd')
+        const cdWidth = cd.offsetWidth
+        const songName = $('.song-name')
+        const cdThumb = $('.cd-thumb')
+        const audio = $('#audio')
+        const playBtn = $('.btn-toggle-play')
+        const btnNext = $('.btn-next')
+        const btnPrev = $('.btn-prev')
+        const btnMute = $('.btn-mute')
+        const progress = $('#progress')
+        const volume = $('#volume')
+        const btnLoop = $('.btn-repeat')
+        const btnRandom = $('.btn-random')
+      
+
+        const app = {
+            currentIndex: 0,
+            currentVolume: 0,
+            index: 0,
+            isPlaying: false,
+            isLoop: false,
+            isRandom: false,
+            songs: [
+                {
+                      name: "Lời Xin Lỗi Vụng Về",
+                      singer: "Quân A.P",
+                      path: "https://tainhac123.com/download/loi-xin-loi-vung-ve-quan-ap.N0JK7UDCaiTK.html",
+                      image: "https://data.chiasenhac.com/data/cover/136/135912.jpg"
+                },
+                {
+                    name: "Hoa Nở Không Màu",
+                    singer: "Hoài Lâm",
+                    path: "https://tainhac123.com/download/hoa-no-khong-mau-hoai-lam.qbK16hjg5TdZ.html",
+                    image: "https://avatar-nct.nixcdn.com/song/2020/05/15/c/f/3/0/1589532035884.jpg"
+                },
+                {
+                    name: "Kém Duyên",
+                    singer: "Rum, NIT, Masew",
+                    path: "https://tainhac123.com/download/kem-duyen-rum-ft-nit-ft-masew.qTdKVyvAaPXG.html",
+                    image: "https://data.chiasenhac.com/data/cover/79/78879.jpg"
+                },
+                {
+                    name: "Cô Gái Vàng",
+                    singer: "HuyR, Tùng Viu",
+                    path: "https://tainhac123.com/download/co-gai-vang-huyr-ft-tung-viu.Meok0iuwHvzv.html",
+                    image: "https://avatar-nct.nixcdn.com/song/2020/09/14/2/3/f/6/1600066773009.jpg"
+                },
+                {
+                    name: "Lối Nhỏ",
+                    singer: "Đen, Phương Anh Đào",
+                    path: "https://tainhac123.com/download/loi-nho-den-ft-phuong-anh-dao.W7Pj7Vc8NptA.html",
+                    image: "https://data.chiasenhac.com/data/cover/112/111281.jpg"
+                },
+                {
+                    name: "Hai Triệu Năm",
+                    singer: "Đen",
+                    path: "https://tainhac123.com/download/hai-trieu-nam-den-ft-bien.RFuRYI9qpBjs.html",
+                    image: "https://data.chiasenhac.com/data/cover/107/106262.jpg"
+                },
+                {
+                    name: "Nàng Thơ",
+                    singer: "Hoàng Dũng",
+                    path: "https://tainhac123.com/download/nang-tho-hoang-dung.Kx3Kbih0rS5z.html",
+                    image: "https://data.chiasenhac.com/data/cover/126/125060.jpg"
+                },
+                {
+                    name: "Tiền Nhiều Để Làm Gì",
+                    singer: "G-Ducky",
+                    path: "https://tainhac123.com/download/tien-nhieu-de-lam-gi-rap-viet-gducky.xHhJObUh8RCV.html",
+                    image: "https://data.chiasenhac.com/data/cover/130/129448.jpg"
+                }
+            ],
+            render() {
+                const htmls = this.songs.map(function (song,index) {
+                    return `
+                    <div class="song" data-id='${index}' >
+                        <div class="thumb"
+                            style="background-image: url('${song.image}')">
+                        </div>
+                        <div class="body">
+                            <h3 class="title">${song.name}</h3>
+                            <p class="author">${song.singer}</p>
+                        </div>
+                        <div class="option">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                    </div>
+                    `
+                })
+                playlist.innerHTML = htmls.join('')
+            },
+          
+            getCurrentSong() {
+                return this.songs[this.currentIndex]
+            },
+           
+            loadCurrentSong() {
+                // Load thông bài hát đầu tiên
+                const song = this.getCurrentSong()
+                songName.innerText = song.name
+                cdThumb.style.backgroundImage = `url('${song.image}')`
+
+                audio.src = song.path
+            },
+            loopSong: function(){
+                this.loadCurrentSong();
+            },
+            randomSong: function(){
+                let songsCount = app.songs.length;
+                let songsRandom = Number(Math.ceil(app.songs.length*Math.random())) -1;
+                if(songsRandom !== app.currentIndex){
+                    app.currentIndex = songsRandom
+                }else {
+                    this.randomSong()
+                }
+                this.loadCurrentSong();
+
+            },
+            nextSong: function () {
+              this.currentIndex++;
+
+              if (this.currentIndex >= this.songs.length) {
+                this.currentIndex = 0;
+              }
+              this.loadCurrentSong();
+            },
+            pickSong: function (data) {
+              this.currentIndex = data;
+              this.loadCurrentSong();
+            },
+            hightLineSong: function (song) {
+              song.classList.add('active')
+            },
+            updateActive: function(){
+                const songRightNow = $('.song.active')
+                if(songRightNow){
+                    songRightNow.classList.remove('active')
+
+                }
+                const listAllSong = $$('.song')
+                listAllSong[this.currentIndex].classList.add('active');
+            },
+            prevSong: function () {
+              this.currentIndex--;
+              if (this.currentIndex < 0 ) {
+                this.currentIndex = this.songs.length-1;
+              }
+              this.loadCurrentSong();
+            },
+            muted: function () {
+              audio.muted()
+         
+            },
+    
+            start() {
+                const self = this
+                audio.muted = false
+                this.render()
+                const listSong = $$('.song')
+                volume.value = 100;
+
+               
+                // Lắng nghe scroll event của HTML
+                window.onscroll = function () {
+                    let newWidth = cdWidth - document.documentElement.scrollTop
+                    if (newWidth < 0) {
+                        newWidth = 0
+                    }
+                    cd.style.width = newWidth + 'px'
+                    cd.style.opacity = newWidth / cdWidth
+                }
+                this.loadCurrentSong()
+                // Xử lý CD quay với animate API
+                const cdAnimate = cd.animate([
+                    // from
+                    {
+                        transform: 'rotate(0)'
+                    },
+                    // to
+                    {
+                        transform: 'rotate(360deg)'
+                    }
+                ], {
+                    duration: 10000,
+                    iterations: Infinity
+                })
+                cdAnimate.pause()
+                // Lắng nghe sự kiện click trên button play
+                playBtn.onclick = function () {
+                    if (self.isPlaying) {
+                        self.isPlaying = false
+                        audio.pause()
+                        cdAnimate.pause()
+                        player.classList.remove('playing')
+                    } else {
+                        self.isPlaying = true
+                        audio.play()
+                        cdAnimate.play()
+                        player.classList.add('playing')
+                    }
+                }
+                btnMute.onclick = function(){
+                    audio.muted = !audio.muted
+                    if(audio.muted){
+                        volume.value = 0
+                    } else {
+                        volume.value = currentVolume
+                    }
+                    
+                    console.log(audio.volume);
+                    this.classList.toggle('active')
+                    
+                }
+                btnLoop.onclick = function(){
+                  app.isLoop = !app.isLoop
+                  this.classList.toggle('active')
+                }
+                btnRandom.onclick = function(){
+                    
+                    app.isRandom = !app.isRandom
+                    this.classList.toggle('active')
+                }
+                playLoop = function(){
+                    self.loopSong()
+                    audio.play();
+                    cdAnimate.play()
+                    self.render();
+                }
+                playRandom = function(){
+                    self.randomSong()
+                    audio.play();
+                    cdAnimate.play()
+                    self.render();
+                }
+                playNext = function(){
+                    self.nextSong()
+                    audio.play();
+                    player.classList.add('playing')
+                    self.isPlaying = true
+                    cdAnimate.play()
+                    app.updateActive()
+                   
+                }
+                playNomal = function(){
+                    player.classList.add('playing')
+                    self.isPlaying = true
+                    cdAnimate.play()
+                }
+                btnNext.onclick = function(){
+                    playNext()
+                } 
+                btnPrev.onclick = function(){
+                  self.prevSong()
+                  audio.play();
+                  player.classList.add('playing')
+                  self.isPlaying = true
+                  cdAnimate.play()
+                  app.updateActive()
+                }
+                audio.ontimeupdate = function ( ){
+                    if(audio.duration){
+                        timePercent = (audio.currentTime / audio.duration) * 100
+                        progress.value = timePercent;
+                    }
+                }
+                volume.onchange = function (e){
+                    // console.log(e.target.value/100);
+                    seekVolume = (e.target.value / 100);
+                    audio.volume = seekVolume;
+                    currentVolume = audio.volume*100
+                    console.log(seekVolume);
+
+                }
+
+
+                /////////////////////////////
+                progress.onchange = function (e){
+                    const seekTime = (audio.duration / 100) * e.target.value;
+                    audio.currentTime = seekTime;
+
+                }
+                progress.onmousedown = function (){
+                    audio.ontimeupdate =  function(){}
+                }
+                progress.onmouseup = function (){
+                    audio.ontimeupdate = function ( ){
+                    if(audio.duration){
+                        timePercent = (audio.currentTime / audio.duration) * 100
+                        progress.value = timePercent;
+                    }
+                    }
+                }
+                // end bai hat
+                audio.onended  = function ( ){
+                    if(app.isLoop && app.isRandom){
+                        console.log("true true");
+                        playLoop()
+                    }
+                    else if(app.isRandom && !app.isLoop){
+                        playRandom()
+                        console.log(" ran true loop false");
+
+                    }
+                    else if(app.isLoop && !app.isRandom){
+                        console.log("loop true  ran false");
+                        playLoop()
+                    }
+                    else{
+                        playNext()
+                    }
+                }
+                listSong.forEach(function(song){
+                    song.onclick = function(){
+                        const songNow = $('.song.active')
+                        if(songNow){
+                            songNow.classList.remove('active')
+                        }
+                        self.isPlaying = true
+                        player.classList.add('playing')
+                        const chooseSong = song.getAttribute('data-id')
+                        app.pickSong(chooseSong)
+                        audio.play();
+                        app.hightLineSong(song)
+
+                    }
+                })
+                listSong[0].classList.add('active')
+            
+            }
+        }
+
+        app.start(
+            
+        )
+    </script>
+</body>
+
+</html>
