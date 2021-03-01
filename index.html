@@ -202,10 +202,136 @@
         .volume-block {
             display:flex;
         }
+/* ////////////////////////////////// FORM*/
+.form-group {
+        display: flex;
+        width: 220px;
+        margin-bottom: 10px;
+        justify-content: space-between;
+    }
 
+    .item-img {
+        height: 70px;
+    }
+
+    .modal {
+        position: fixed;
+        display: none;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-body {
+        background-color: #fff;
+        position: relative;
+        margin: auto;
+        height: 120px;
+        width: 350px;
+        padding: 20px;
+        border-radius: 4px;
+        font-size: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-control {
+        display: flex;
+        flex-direction: row-reverse;
+    }
+
+    .modal-control div {
+        padding: 6px 15px;
+        font-size: 18px;
+        border: 0px;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.5);
+        border-radius: 4px;
+        margin-left: 20px;
+        background-color: #ccc;
+    }
+
+    .modal-control div:hover {
+        cursor: pointer;
+        opacity: 0.9;
+    }
+
+    .modal-close {
+        position: absolute;
+        font-size: 24px;
+        top: 10px;
+        right: 10px;
+    }
+
+    .modal-close:hover {
+        cursor: pointer;
+        color: #ccc;
+    }
+
+    .table-container {
+        width: 70%;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.4);
+    }
+
+    table {
+        width: 100%;
+        margin-top: 40px;
+        border-collapse: collapse;
+    }
+
+    table th {
+        background-color: #000;
+        color: #fff;
+        height: 40px;
+    }
+
+    table th,
+    table td {
+        text-align: center;
+    }
+
+    table tbody tr {
+        height: 75px;
+    }
+
+    table tbody tr:nth-child(odd) {
+        background-color: #EFEFEF;
+    }
+
+    .list-no-data {
+        height: 40px;
+        padding: 10px;
+        line-height: 40px;
+        display: none;
+    }
+
+    .list-no-data.show {
+        display: block;
+    }
+
+    .message {
+        position: absolute;
+        color: green;
+        font-size: 18px;
+        margin-top: 10px;
+    }
     </style>
 </head>
-
 <body>
     <div class="player">
         <!-- Dashboard -->
@@ -215,13 +341,11 @@
                 <h4>Now playing:</h4>
                 <h2 class="song-name"></h2>
             </header>
-
             <!-- CD -->
             <div class="cd">
                 <div class="cd-thumb">
                 </div>
             </div>
-
             <!-- Control -->
             <div class="control">
                 <div class="btn btn-repeat">
@@ -258,7 +382,61 @@
         <div class="playlist">
         </div>
     </div>
-
+    <div class="modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-body">
+            <div>Are you sure you want to delete this?</div>
+            <div class="modal-control">
+                <div class="no-btn">No</div>
+                <div class="yes-btn">Yes</div>
+            </div>
+            <div class="modal-close">
+                <i class="fas fa-times"></i>
+            </div>
+        </div>
+    </div>
+    <form action="" id="list-form">
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" name="name" id="name" >
+        </div>
+        <div class="form-group">
+            <label for="singer">Singer</label>
+            <input type="text" name="singer" id="singer" >
+        </div>    
+        <div class="form-group">
+            <label for="path">Path</label>
+            <input type="text" name="path" id="path" >
+        </div>
+        <div class="form-group">
+            <label for="image">Image</label>
+            <input type="text" name="image" id="image">
+        </div>
+        <button type="submit" class="submit-btn">Create</button>
+    </form>
+    <div class="message"></div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <th>No.</th>
+                <th>Name</th>
+                <th>Singer</th>
+                <th>Path</th>
+                <th>Image</th>
+                <th></th>
+                <th></th>
+            </thead>
+            <tbody class="item">
+            </tbody>
+         
+        </table>
+        <div class="list-no-data">
+            The table has no data
+        </div>
+    </div>
+    
+    
+    
     <script>
 
 // 1.Liệt kê danh sách bài hát
@@ -295,66 +473,88 @@
         const btnLoop = $('.btn-repeat')
         const btnRandom = $('.btn-random')
       
+        const lists = JSON.parse(localStorage.getItem('lists')) || []
 
         const app = {
+            editMode : false,
+            save : function () {
+                localStorage.setItem('lists', JSON.stringify(lists))
+            },
+            add : function (item) {
+                lists.push(item)
+            },
+            update : function (index, item) {
+                lists[index] = item
+            },
+            delete : function (index) {
+                lists.splice(index, 1)
+            },
+            autoHideMessage : function() {
+                clearTimeout(this.timeout)
+                this.timeout = setTimeout(function () {
+                    $('.message').innerText = ''
+                }, 5000)
+            },
             currentIndex: 0,
             currentVolume: 0,
             index: 0,
             isPlaying: false,
             isLoop: false,
             isRandom: false,
-            songs: [
-                {
-                      name: "Lời Xin Lỗi Vụng Về",
-                      singer: "Quân A.P",
-                      path: "https://tainhac123.com/download/loi-xin-loi-vung-ve-quan-ap.N0JK7UDCaiTK.html",
-                      image: "https://data.chiasenhac.com/data/cover/136/135912.jpg"
-                },
-                {
-                    name: "Hoa Nở Không Màu",
-                    singer: "Hoài Lâm",
-                    path: "https://tainhac123.com/download/hoa-no-khong-mau-hoai-lam.qbK16hjg5TdZ.html",
-                    image: "https://avatar-nct.nixcdn.com/song/2020/05/15/c/f/3/0/1589532035884.jpg"
-                },
-                {
-                    name: "Kém Duyên",
-                    singer: "Rum, NIT, Masew",
-                    path: "https://tainhac123.com/download/kem-duyen-rum-ft-nit-ft-masew.qTdKVyvAaPXG.html",
-                    image: "https://data.chiasenhac.com/data/cover/79/78879.jpg"
-                },
-                {
-                    name: "Cô Gái Vàng",
-                    singer: "HuyR, Tùng Viu",
-                    path: "https://tainhac123.com/download/co-gai-vang-huyr-ft-tung-viu.Meok0iuwHvzv.html",
-                    image: "https://avatar-nct.nixcdn.com/song/2020/09/14/2/3/f/6/1600066773009.jpg"
-                },
-                {
-                    name: "Lối Nhỏ",
-                    singer: "Đen, Phương Anh Đào",
-                    path: "https://tainhac123.com/download/loi-nho-den-ft-phuong-anh-dao.W7Pj7Vc8NptA.html",
-                    image: "https://data.chiasenhac.com/data/cover/112/111281.jpg"
-                },
-                {
-                    name: "Hai Triệu Năm",
-                    singer: "Đen",
-                    path: "https://tainhac123.com/download/hai-trieu-nam-den-ft-bien.RFuRYI9qpBjs.html",
-                    image: "https://data.chiasenhac.com/data/cover/107/106262.jpg"
-                },
-                {
-                    name: "Nàng Thơ",
-                    singer: "Hoàng Dũng",
-                    path: "https://tainhac123.com/download/nang-tho-hoang-dung.Kx3Kbih0rS5z.html",
-                    image: "https://data.chiasenhac.com/data/cover/126/125060.jpg"
-                },
-                {
-                    name: "Tiền Nhiều Để Làm Gì",
-                    singer: "G-Ducky",
-                    path: "https://tainhac123.com/download/tien-nhieu-de-lam-gi-rap-viet-gducky.xHhJObUh8RCV.html",
-                    image: "https://data.chiasenhac.com/data/cover/130/129448.jpg"
-                }
-            ],
+            songs: 
+            lists ,
+            // [
+            //     {
+            //           name: "Lời Xin Lỗi Vụng Về",
+            //           singer: "Quân A.P",
+            //           path: "https://tainhac123.com/download/loi-xin-loi-vung-ve-quan-ap.N0JK7UDCaiTK.html",
+            //           image: "https://data.chiasenhac.com/data/cover/136/135912.jpg"
+            //     },
+            //     {
+            //         name: "Hoa Nở Không Màu",
+            //         singer: "Hoài Lâm",
+            //         path: "https://tainhac123.com/download/hoa-no-khong-mau-hoai-lam.qbK16hjg5TdZ.html",
+            //         image: "https://avatar-nct.nixcdn.com/song/2020/05/15/c/f/3/0/1589532035884.jpg"
+            //     },
+            //     {
+            //         name: "Kém Duyên",
+            //         singer: "Rum, NIT, Masew",
+            //         path: "https://tainhac123.com/download/kem-duyen-rum-ft-nit-ft-masew.qTdKVyvAaPXG.html",
+            //         image: "https://data.chiasenhac.com/data/cover/79/78879.jpg"
+            //     },
+            //     {
+            //         name: "Cô Gái Vàng",
+            //         singer: "HuyR, Tùng Viu",
+            //         path: "https://tainhac123.com/download/co-gai-vang-huyr-ft-tung-viu.Meok0iuwHvzv.html",
+            //         image: "https://avatar-nct.nixcdn.com/song/2020/09/14/2/3/f/6/1600066773009.jpg"
+            //     },
+            //     {
+            //         name: "Lối Nhỏ",
+            //         singer: "Đen, Phương Anh Đào",
+            //         path: "https://tainhac123.com/download/loi-nho-den-ft-phuong-anh-dao.W7Pj7Vc8NptA.html",
+            //         image: "https://data.chiasenhac.com/data/cover/112/111281.jpg"
+            //     },
+            //     {
+            //         name: "Hai Triệu Năm",
+            //         singer: "Đen",
+            //         path: "https://tainhac123.com/download/hai-trieu-nam-den-ft-bien.RFuRYI9qpBjs.html",
+            //         image: "https://data.chiasenhac.com/data/cover/107/106262.jpg"
+            //     },
+            //     {
+            //         name: "Nàng Thơ",
+            //         singer: "Hoàng Dũng",
+            //         path: "https://tainhac123.com/download/nang-tho-hoang-dung.Kx3Kbih0rS5z.html",
+            //         image: "https://data.chiasenhac.com/data/cover/126/125060.jpg"
+            //     },
+            //     {
+            //         name: "Tiền Nhiều Để Làm Gì",
+            //         singer: "G-Ducky",
+            //         path: "https://tainhac123.com/download/tien-nhieu-de-lam-gi-rap-viet-gducky.xHhJObUh8RCV.html",
+            //         image: "https://data.chiasenhac.com/data/cover/130/129448.jpg"
+            //     }
+            // ],
             render() {
-                const htmls = this.songs.map(function (song,index) {
+                const htmlss = this.songs.map(function (song,index) {
                     return `
                     <div class="song" data-id='${index}' >
                         <div class="thumb"
@@ -370,8 +570,52 @@
                     </div>
                     `
                 })
-                playlist.innerHTML = htmls.join('')
+                playlist.innerHTML = htmlss.join('')
+                
             },
+            renderr () {
+                    const htmls = lists.map(function (item, index) {
+                        return `
+                        <tr>
+                            <td>
+                                ${index + 1}
+                            </td>
+                            <td>
+                                ${item.name}    
+                            </td>   
+                            <td>
+                                ${item.singer}    
+                            </td>    
+                            <td>
+                                ${item.path}    
+                            </td>    
+                        
+                            <td>
+                                <img src="${item.image}" class="item-img">    
+                            </td>
+                            <td>
+                                <button data-index="${index}" class="edit">Edit</button>
+                            </td>
+                            <td>
+                                <button data-index="${index}" class="delete">Delete</button>  
+                            </td>     
+                        </tr>
+                        `
+                    }).join('')
+                
+                    $('.item').innerHTML = htmls
+                    const messageNoData = $('.list-no-data')
+
+                    if (lists.length === 0) {
+                        messageNoData.classList.add('show')
+                    } else {
+                        messageNoData.classList.remove('show')
+                    }
+                    app.loadCurrentSong() 
+                    app.render()
+                
+                
+                },
           
             getCurrentSong() {
                 return this.songs[this.currentIndex]
@@ -439,10 +683,95 @@
                 const self = this
                 audio.muted = false
                 this.render()
-                const listSong = $$('.song')
+                this.renderr()
+                let listSong = $$('.song')
+              
                 volume.value = 100;
 
-               
+                ///////////////////////////////
+                const submitBtn = $('.submit-btn')
+                const form = $('#list-form')
+                const table = $('.item')
+                const message = $('.message')
+                const name = $('input[name=name]')
+                const path = $('input[name=path]')
+                const image = $('input[name=image]')
+                const singer = $('input[name=singer]')
+                /////////////////////
+
+                table.onclick = function (e) {
+                    const deleteBtn = e.target.closest('.delete')
+                    const editBtn = e.target.closest('.edit')
+
+                    if (deleteBtn) {
+                        const index = deleteBtn.getAttribute('data-index')
+                        app.tmpIndex = index
+                        deleteNotification.classList.add('show')
+                    }
+
+                    if (editBtn) {
+                        app.editMode = true
+                        const index = editBtn.getAttribute('data-index')
+                        const item = lists[index]
+                        app.tmpIndex = index
+                        name.value = item.name
+                        singer.value = item.singer
+                        path.value = item.path
+                        image.value = item.image
+                        submitBtn.innerText = 'Save'
+                    }
+
+                }
+
+                const deleteNotification = $('.modal')
+                const modalClose = $('.modal-close')
+                const noBtn = $('.no-btn')
+                const yesBtn = $('.yes-btn')
+
+                modalClose.onclick = function () {
+                    deleteNotification.classList.remove('show')
+                }
+                noBtn.onclick = function () {
+                    deleteNotification.classList.remove('show')
+                }
+                yesBtn.onclick = function () {
+                    deleteNotification.classList.remove('show')
+                    app.delete(app.tmpIndex)
+                    app.save()
+                    app.renderr()
+                    message.innerText = 'Delete Successfully!'
+                    app.autoHideMessage()
+                }
+                
+                form.onsubmit = function (e) {
+                    e.preventDefault()
+
+                    const item = {
+                        name: name.value,
+                        singer: singer.value,
+                        path: path.value,
+                        image: image.value,
+                    }
+                    if (app.editMode) {
+                        app.update(app.tmpIndex, item)
+                        app.editMode = false
+                        submitBtn.innerText = 'Create'
+                        message.innerText = 'Update Successfully!'
+                    } else {
+                        app.add(item)
+                        message.innerText = 'Add Successfully!'
+                    }
+                    form.reset()
+                    app.save()
+                    app.renderr()
+
+                    app.autoHideMessage()
+                }
+
+                
+              
+                ///////
+                //this.renderr()
                 // Lắng nghe scroll event của HTML
                 window.onscroll = function () {
                     let newWidth = cdWidth - document.documentElement.scrollTop
@@ -490,7 +819,6 @@
                         volume.value = currentVolume
                     }
                     
-                    console.log(audio.volume);
                     this.classList.toggle('active')
                     
                 }
@@ -540,6 +868,7 @@
                   cdAnimate.play()
                   app.updateActive()
                 }
+           
                 audio.ontimeupdate = function ( ){
                     if(audio.duration){
                         timePercent = (audio.currentTime / audio.duration) * 100
@@ -547,20 +876,15 @@
                     }
                 }
                 volume.onchange = function (e){
-                    // console.log(e.target.value/100);
                     seekVolume = (e.target.value / 100);
                     audio.volume = seekVolume;
                     currentVolume = audio.volume*100
-                    console.log(seekVolume);
 
                 }
-
-
                 /////////////////////////////
                 progress.onchange = function (e){
                     const seekTime = (audio.duration / 100) * e.target.value;
                     audio.currentTime = seekTime;
-
                 }
                 progress.onmousedown = function (){
                     audio.ontimeupdate =  function(){}
@@ -576,24 +900,23 @@
                 // end bai hat
                 audio.onended  = function ( ){
                     if(app.isLoop && app.isRandom){
-                        console.log("true true");
                         playLoop()
                     }
                     else if(app.isRandom && !app.isLoop){
                         playRandom()
-                        console.log(" ran true loop false");
 
                     }
                     else if(app.isLoop && !app.isRandom){
-                        console.log("loop true  ran false");
                         playLoop()
                     }
                     else{
                         playNext()
                     }
                 }
+
                 listSong.forEach(function(song){
                     song.onclick = function(){
+                        console.log(song);
                         const songNow = $('.song.active')
                         if(songNow){
                             songNow.classList.remove('active')

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css">
+</head>
+<style>
+    .form-group {
+        display: flex;
+        width: 220px;
+        margin-bottom: 10px;
+        justify-content: space-between;
+    }
+
+    .kol-img {
+        height: 70px;
+    }
+
+    .modal {
+        position: fixed;
+        display: none;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-body {
+        background-color: #fff;
+        position: relative;
+        margin: auto;
+        height: 120px;
+        width: 350px;
+        padding: 20px;
+        border-radius: 4px;
+        font-size: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-control {
+        display: flex;
+        flex-direction: row-reverse;
+    }
+
+    .modal-control div {
+        padding: 6px 15px;
+        font-size: 18px;
+        border: 0px;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.5);
+        border-radius: 4px;
+        margin-left: 20px;
+        background-color: #ccc;
+    }
+
+    .modal-control div:hover {
+        cursor: pointer;
+        opacity: 0.9;
+    }
+
+    .modal-close {
+        position: absolute;
+        font-size: 24px;
+        top: 10px;
+        right: 10px;
+    }
+
+    .modal-close:hover {
+        cursor: pointer;
+        color: #ccc;
+    }
+
+    .table-container {
+        width: 70%;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.4);
+    }
+
+    table {
+        width: 100%;
+        margin-top: 40px;
+        border-collapse: collapse;
+    }
+
+    table th {
+        background-color: #000;
+        color: #fff;
+        height: 40px;
+    }
+
+    table th,
+    table td {
+        text-align: center;
+    }
+
+    table tbody tr {
+        height: 75px;
+    }
+
+    table tbody tr:nth-child(odd) {
+        background-color: #EFEFEF;
+    }
+
+    .kol-no-data {
+        height: 40px;
+        padding: 10px;
+        line-height: 40px;
+        display: none;
+    }
+
+    .kol-no-data.show {
+        display: block;
+    }
+
+    .message {
+        position: absolute;
+        color: green;
+        font-size: 18px;
+        margin-top: 10px;
+    }
+</style>
+
+<body>
+    <div class="modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-body">
+            <div>Are you sure you want to delete this?</div>
+            <div class="modal-control">
+                <div class="no-btn">No</div>
+                <div class="yes-btn">Yes</div>
+            </div>
+            <div class="modal-close">
+                <i class="fas fa-times"></i>
+            </div>
+        </div>
+    </div>
+    <form action="" id="kol-form">
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" name="name" id="name" placeholder>
+        </div>
+        <div class="form-group">
+            <label for="age">Age</label>
+            <input type="text" name="age" id="age" placeholder>
+        </div>
+        <div class="form-group">
+            <label for="phone">Phone</label>
+            <input type="text" name="phone" id="phone" placeholder>
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="text" name="email" id="email" placeholder>
+        </div>
+        <div class="form-group">
+            <label for="image">Image</label>
+            <input type="text" name="image" id="image" placeholder>
+        </div>
+        <button type="submit" class="submit-btn">Create</button>
+    </form>
+    <div class="message"></div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <th>No.</th>
+                <th>Name</th>
+                <th>Age</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Img</th>
+                <th></th>
+                <th></th>
+            </thead>
+            <tbody class="kol">
+            </tbody>
+
+        </table>
+        <div class="kol-no-data">
+            The table has no data
+        </div>
+    </div>
+
+
+    <script>
+        const $ = document.querySelector.bind(document)
+        const $$ = document.querySelectorAll.bind(document)
+
+        function App() {
+            this.editMode = false
+            this.timeout
+            this.kols = JSON.parse(localStorage.getItem('kols')) || []
+            this.save = function () {
+                localStorage.setItem('kols', JSON.stringify(this.kols))
+            }
+            this.add = function (kol) {
+                this.kols.push(kol)
+            }
+            this.update = function (index, kol) {
+                this.kols[index] = kol
+            }
+            this.delete = function (index) {
+                this.kols.splice(index, 1)
+            }
+            this.autoHideMessage = function() {
+                clearTimeout(this.timeout)
+                this.timeout = setTimeout(function () {
+                    $('.message').innerText = ''
+                }, 5000)
+            }
+            this.start = function () {
+                this.render()
+                const submitBtn = $('.submit-btn')
+                const form = $('#kol-form')
+                const table = $('.kol')
+                const message = $('.message')
+                const name = $('input[name=name]')
+                const age = $('input[name=age]')
+                const phone = $('input[name=phone]')
+                const email = $('input[name=email]')
+                const image = $('input[name=image]')
+
+                table.onclick = function (e) {
+                    const deleteBtn = e.target.closest('.delete')
+                    const editBtn = e.target.closest('.edit')
+
+                    if (deleteBtn) {
+                        const index = deleteBtn.getAttribute('data-index')
+                        app.tmpIndex = index
+                        deleteNotification.classList.add('show')
+                    }
+
+                    if (editBtn) {
+                        app.editMode = true
+                        const index = editBtn.getAttribute('data-index')
+                        const kol = app.kols[index]
+                        app.tmpIndex = index
+                        name.value = kol.name
+                        age.value = kol.age
+                        phone.value = kol.phone
+                        email.value = kol.email
+                        image.value = kol.image
+                        submitBtn.innerText = 'Save'
+                    }
+
+                }
+
+                const deleteNotification = $('.modal')
+                const modalClose = $('.modal-close')
+                const noBtn = $('.no-btn')
+                const yesBtn = $('.yes-btn')
+
+                modalClose.onclick = function () {
+                    deleteNotification.classList.remove('show')
+                }
+                noBtn.onclick = function () {
+                    deleteNotification.classList.remove('show')
+                }
+                yesBtn.onclick = function () {
+                    deleteNotification.classList.remove('show')
+                    app.delete(app.tmpIndex)
+                    app.save()
+                    app.render()
+                    message.innerText = 'Delete Successfully!'
+                    app.autoHideMessage()
+                }
+                
+                form.onsubmit = function (e) {
+                    e.preventDefault()
+
+                    const kol = {
+                        name: name.value,
+                        age: age.value,
+                        phone: phone.value,
+                        email: email.value,
+                        image: image.value,
+                    }
+                    if (app.editMode) {
+                        app.update(app.tmpIndex, kol)
+                        app.editMode = false
+                        submitBtn.innerText = 'Create'
+                        message.innerText = 'Update Successfully!'
+                    } else {
+                        app.add(kol)
+                        message.innerText = 'Add Successfully!'
+                    }
+                    form.reset()
+                    app.save()
+                    app.render()
+                    app.autoHideMessage()
+                }
+
+            }
+            this.render = function () {
+                const htmls = this.kols.map(function (kol, index) {
+                    return `
+                    <tr>
+                        <td>
+                            ${index + 1}
+                        </td>
+                        <td>
+                            ${kol.name}    
+                        </td>   
+                        <td>
+                            ${kol.age}    
+                        </td>    
+                        <td>
+                            ${kol.phone}    
+                        </td>    
+                        <td>
+                            ${kol.email}    
+                        </td>    
+                        <td>
+                            <img src="${kol.image}" class="kol-img">    
+                        </td>
+                        <td>
+                            <button data-index="${index}" class="edit">Edit</button>
+                        </td>
+                        <td>
+                            <button data-index="${index}" class="delete">Delete</button>  
+                        </td>     
+                    </tr>
+                    `
+                }).join('')
+                $('.kol').innerHTML = htmls
+                const messageNoData = $('.kol-no-data')
+
+                if (app.kols.length === 0) {
+                    messageNoData.classList.add('show')
+                } else {
+                    messageNoData.classList.remove('show')
+                }
+
+            }
+        }
+        const app = new App()
+        app.start()
+    </script>
+</body>
+
+</html>
